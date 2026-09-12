@@ -1,0 +1,48 @@
+name: Merge Calendars Daily
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "merge_calendars.py"
+      - ".github/workflows/merge_calendars.yml"
+
+jobs:
+  merge-calendars:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      LEARNING_CALENDAR_URL: ${{ secrets.LEARNING_CALENDAR_URL }}
+      SCIENTIA_CALENDAR_URL: ${{ secrets.SCIENTIA_CALENDAR_URL }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install icalendar requests
+
+      - name: Run merge script
+        run: python merge_calendars.py
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add merged_calendar.ics
+          if git diff --cached --quiet; then
+            echo "No calendar changes to commit"
+          else
+            git commit -m "Update merged calendar"
+            git push
+          fi
