@@ -5,6 +5,7 @@ from datetime import date, datetime, time, timezone
 import requests
 from icalendar import Calendar
 
+# Learn supplies event details; Scientia supplies room/location only.
 OUTPUT_FILE = "merged_calendar.ics"
 START_TOLERANCE_SECONDS = 30 * 60
 
