@@ -3,10 +3,15 @@ from datetime import datetime, timezone
 
 from icalendar import Event
 
-from sync_notion import classify_event, component_to_record
+from sync_notion import canonical_date, classify_event, component_to_record
 
 
 class SyncNotionTests(unittest.TestCase):
+    def test_normalises_equivalent_timezones(self):
+        local = canonical_date("2026-09-24T14:15:00+01:00")
+        notion = canonical_date("2026-09-24T13:15:00.000Z")
+        self.assertEqual(local, notion)
+
     def test_classifies_course_sessions(self):
         self.assertEqual(classify_event("PBL: Thomas Allan"), "PBL")
         self.assertEqual(classify_event("IOD: White Cell Disorders"), "IoD")
