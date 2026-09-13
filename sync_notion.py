@@ -51,6 +51,16 @@ def iso_value(value: date | datetime) -> tuple[str, bool]:
     return value.isoformat(), True
 
 
+def canonical_date(value: str | None) -> str | None:
+    """Normalise equivalent Notion and iCalendar timestamps for comparison."""
+    if not value or len(value) == 10:
+        return value
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc).replace(microsecond=0).isoformat()
+
+
 def classify_event(title: str) -> str:
     upper = title.upper()
     if "PBL" in upper:
@@ -88,8 +98,8 @@ class EventRecord:
     def comparable(self) -> dict[str, Any]:
         return {
             "title": self.title,
-            "start": self.start,
-            "end": self.end,
+            "start": canonical_date(self.start),
+            "end": canonical_date(self.end),
             "all_day": self.all_day,
             "event_type": self.event_type,
             "location": self.location,
@@ -179,8 +189,8 @@ def existing_record(page: dict[str, Any]) -> dict[str, Any]:
     when = props.get("When", {}).get("date") or {}
     return {
         "title": plain_text(props.get("Event", {}).get("title")),
-        "start": when.get("start"),
-        "end": when.get("end"),
+        "start": canonical_date(when.get("start")),
+        "end": canonical_date(when.get("end")),
         "all_day": bool(props.get("All Day", {}).get("checkbox")),
         "event_type": (props.get("Type", {}).get("select") or {}).get("name"),
         "location": plain_text(props.get("Location", {}).get("rich_text")),
