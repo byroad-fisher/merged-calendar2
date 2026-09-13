@@ -9,6 +9,8 @@ on:
       - main
     paths:
       - "merge_calendars.py"
+      - "sync_notion.py"
+      - "requirements.txt"
       - ".github/workflows/merge_calendars.yml"
 
 jobs:
@@ -19,6 +21,12 @@ jobs:
     env:
       LEARNING_CALENDAR_URL: ${{ secrets.LEARNING_CALENDAR_URL }}
       SCIENTIA_CALENDAR_URL: ${{ secrets.SCIENTIA_CALENDAR_URL }}
+      NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+      NOTION_DATA_SOURCE_ID: ${{ secrets.NOTION_DATA_SOURCE_ID }}
+      NOTION_API_VERSION: "2025-09-03"
+      SYNC_FROM: "2026-08-01"
+      SYNC_UNTIL: "2027-07-31"
+      ICS_SOURCE_URL: "https://raw.githubusercontent.com/byroad-fisher/merged-calendar2/main/merged_calendar.ics"
 
     steps:
       - name: Checkout repository
@@ -30,10 +38,21 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install icalendar requests
+        run: pip install -r requirements.txt
 
-      - name: Run merge script
+      - name: Run tests
+        run: python -m unittest discover -s tests -p "test_*.py"
+
+      - name: Merge calendar feeds
         run: python merge_calendars.py
+
+      - name: Sync events to Notion
+        if: ${{ env.NOTION_TOKEN != '' && env.NOTION_DATA_SOURCE_ID != '' }}
+        run: python sync_notion.py
+
+      - name: Explain skipped Notion sync
+        if: ${{ env.NOTION_TOKEN == '' || env.NOTION_DATA_SOURCE_ID == '' }}
+        run: echo "Notion sync skipped until NOTION_TOKEN and NOTION_DATA_SOURCE_ID are configured."
 
       - name: Commit and push changes
         run: |
